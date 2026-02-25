@@ -1,4 +1,4 @@
--- Gameshark Deck: Start with a Negative Master Ball and Negative Mega Stone
+-- Action Replay Deck: Start with a Negative Master Ball and Negative Mega Stone
 -- Requires Pokermon mod for both items
 
 SMODS.Atlas({
@@ -10,7 +10,7 @@ SMODS.Atlas({
 
 if (SMODS.Mods["Pokermon"] or {}).can_load then
     SMODS.Back({
-        key = "gameshark",
+        key = "actionreplay",
         atlas = "back",
         pos = { x = 0, y = 0 },
         config = {},

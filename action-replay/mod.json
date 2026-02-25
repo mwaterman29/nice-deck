@@ -1,14 +1,14 @@
 {
-	"id": "Gameshark",
-	"name": "Gameshark Deck",
+	"id": "ActionReplay",
+	"name": "Action Replay Deck",
 	"author": ["nice-deck"],
 	"description": "Start with a Negative Master Ball and Negative Mega Stone!",
-	"prefix": "gshark",
+	"prefix": "ar",
 	"main_file": "main.lua",
 	"priority": 20,
 	"badge_colour": "8B5CF6",
 	"badge_text_colour": "FFFFFF",
-	"display_name": "Gameshark",
+	"display_name": "Action Replay",
 	"version": "0.1.0",
 	"dependencies": [
 		"Steamodded (>=1.0.0~BETA-1221a)",

@@ -464,7 +464,7 @@ function Card:draw(layer)
                                             {
                                                 n = G.UIT.T,
                                                 config = {
-                                                    text = localize("k_edit"),
+                                                    text = "Edit",
                                                     scale = 0.48,
                                                     colour = G.C.WHITE,
                                                     shadow = true,
@@ -479,7 +479,7 @@ function Card:draw(layer)
                                             {
                                                 n = G.UIT.T,
                                                 config = {
-                                                    text = localize("k_deck"),
+                                                    text = "Deck",
                                                     scale = 0.38,
                                                     colour = G.C.WHITE,
                                                     shadow = true,

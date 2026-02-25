@@ -4,7 +4,7 @@
 
 MODS_DIR="C:/Users/Matt/AppData/Roaming/Balatro/Mods"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-DECKS=("mega-plus-plus" "gameshark" "mocktail")
+DECKS=("mega-plus-plus" "action-replay" "mocktail")
 
 for deck in "${DECKS[@]}"; do
     src="$PROJECT_DIR/$deck"

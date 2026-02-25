@@ -10,7 +10,7 @@ Unlike the Rogue Deck from Pokermon+, there's no ante requirement change — jus
 
 **Requires**: [Pokermon](https://github.com/InertSteak/Pokermon) (>=3.6.0)
 
-### Gameshark Deck
+### Action Replay Deck
 Start with a **Negative** Master Ball and a **Negative** Mega Stone.
 Both items take no consumable slots. Catch 'em all from turn one.
 
@@ -31,7 +31,7 @@ Copy any deck folder (e.g. `mega-plus-plus/`) into your Balatro `Mods/` director
 ```
 nice-deck/
 ├── mega-plus-plus/   # Mega++ Deck mod
-├── gameshark/        # Gameshark Deck mod
+├── action-replay/    # Action Replay Deck mod
 ├── mocktail/         # Mocktail Deck mod
 ├── vision/           # Design docs and learnings
 └── references/       # Cloned reference repos for study
