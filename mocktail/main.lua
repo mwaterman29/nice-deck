@@ -201,6 +201,82 @@ function Back:change_to(new_back)
 end
 
 ----------------------------------------------
+-- UI: Selection count tracking
+----------------------------------------------
+
+G.MOCKTAIL_STATE = G.MOCKTAIL_STATE or {}
+G.MOCKTAIL_STATE.count_text = "Start (0 selected)"
+
+local function update_mocktail_count()
+    local count = 0
+    if G.mocktail_select then
+        for i = 1, #G.mocktail_select do
+            if G.mocktail_select[i].cards then
+                for j = 1, #G.mocktail_select[i].cards do
+                    if G.mocktail_select[i].cards[j].highlighted then
+                        count = count + 1
+                    end
+                end
+            end
+        end
+    end
+    G.MOCKTAIL_STATE.count_text = "Start (" .. count .. " selected)"
+end
+
+local function mocktail_select_all()
+    if not G.mocktail_select or not G.mocktail_select[1] then return end
+    -- If any are highlighted, deselect all; otherwise select all
+    local any_highlighted = false
+    for i = 1, #G.mocktail_select do
+        for j = 1, #G.mocktail_select[i].cards do
+            if G.mocktail_select[i].cards[j].highlighted then
+                any_highlighted = true
+                break
+            end
+        end
+        if any_highlighted then break end
+    end
+    local highlight = not any_highlighted
+    for i = 1, #G.mocktail_select do
+        for j = 1, #G.mocktail_select[i].cards do
+            G.mocktail_select[i].cards[j].highlighted = highlight
+        end
+    end
+    if highlight then
+        play_sound("cardSlide1")
+    else
+        play_sound("cardSlide2", nil, 0.3)
+    end
+    mocktail_cfg_edit(highlight)
+    update_mocktail_count()
+end
+
+----------------------------------------------
+-- UI: Button functions
+----------------------------------------------
+
+G.FUNCS.mocktail_start = function(e)
+    G.FUNCS.exit_overlay_menu(e)
+    G.FUNCS.start_run(e)
+end
+
+G.FUNCS.mocktail_select_all = function(e)
+    mocktail_select_all()
+end
+
+----------------------------------------------
+-- UI: "A" key to select all
+----------------------------------------------
+
+local key_press_ref = Controller.key_press_update
+function Controller:key_press_update(key, dt)
+    if key == "a" and G.mocktail_select and G.mocktail_select[1] then
+        mocktail_select_all()
+    end
+    return key_press_ref(self, key, dt)
+end
+
+----------------------------------------------
 -- UI: Detect Mocktail deck click
 ----------------------------------------------
 
@@ -269,6 +345,9 @@ function Card:click()
             end
             G.GAME.viewed_back = G.P_CENTERS["b_mocktail_mocktail"]
 
+            -- Update count for button display
+            update_mocktail_count()
+
             -- Build UI overlay
             local deck_tables = {}
             for i = 1, #G.mocktail_select do
@@ -306,7 +385,29 @@ function Card:click()
                         nodes = {
                             {
                                 n = G.UIT.T,
-                                config = { text = localize("k_mocktail_rightclick"), scale = 0.32, colour = G.C.WHITE },
+                                config = { text = "Press A to select/deselect all", scale = 0.32, colour = G.C.UI.TEXT_INACTIVE },
+                            },
+                        },
+                    },
+                    { n = G.UIT.R, config = { align = "cm", padding = 0.3, minh = 0.1 } },
+                    {
+                        n = G.UIT.R,
+                        config = { align = "cm", padding = 0.1 },
+                        nodes = {
+                            {
+                                n = G.UIT.C,
+                                config = { align = "cm", padding = 0.1, r = 0.1, colour = G.C.GREEN, hover = true, button = "mocktail_start", minw = 3.5, minh = 0.6 },
+                                nodes = {
+                                    { n = G.UIT.T, config = { ref_table = G.MOCKTAIL_STATE, ref_value = "count_text", scale = 0.45, colour = G.C.WHITE, shadow = true } },
+                                },
+                            },
+                            { n = G.UIT.C, config = { align = "cm", padding = 0.15 } },
+                            {
+                                n = G.UIT.C,
+                                config = { align = "cm", padding = 0.1, r = 0.1, colour = G.C.BLUE, hover = true, button = "mocktail_select_all", minw = 2, minh = 0.6 },
+                                nodes = {
+                                    { n = G.UIT.T, config = { text = "Select All (A)", scale = 0.4, colour = G.C.WHITE, shadow = true } },
+                                },
                             },
                         },
                     },
@@ -477,43 +578,9 @@ local highlight_ref = Card.highlight
 function Card:highlight(is_highlighted)
     if self.mocktail_select then
         mocktail_cfg_edit(is_highlighted, self.mocktail_select)
+        update_mocktail_count()
     end
     return highlight_ref(self, is_highlighted)
-end
-
-----------------------------------------------
--- UI: Right-click to select/deselect all
-----------------------------------------------
-
-local r_cursor_press_ref = Controller.queue_R_cursor_press
-function Controller:queue_R_cursor_press(x, y)
-    local ret = r_cursor_press_ref(self, x, y)
-    if G.mocktail_select and G.mocktail_select[1] and G.mocktail_select[1].cards then
-        -- Determine whether to select or deselect all
-        local highlight = true
-        for i = 1, #G.mocktail_select do
-            for j = 1, #G.mocktail_select[i].cards do
-                if G.mocktail_select[i].cards[j].highlighted then
-                    highlight = false
-                    break
-                end
-            end
-            if not highlight then break end
-        end
-        -- Apply to all cards
-        for i = 1, #G.mocktail_select do
-            for j = 1, #G.mocktail_select[i].cards do
-                G.mocktail_select[i].cards[j].highlighted = highlight
-            end
-        end
-        if highlight then
-            play_sound("cardSlide1")
-        else
-            play_sound("cardSlide2", nil, 0.3)
-        end
-        mocktail_cfg_edit(highlight)
-    end
-    return ret
 end
 
 ----------------------------------------------
@@ -527,7 +594,7 @@ G.E_MANAGER:add_event(Event({
         if (not cfg.selection) or #decks ~= #cfg.selection then
             local str = ""
             for i = 1, #decks do
-                str = str .. "1"
+                str = str .. "0"
             end
             cfg.selection = str
         end

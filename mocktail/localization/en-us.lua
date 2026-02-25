@@ -14,7 +14,6 @@ return {
     misc = {
         dictionary = {
             k_mocktail_select = "Click deck cards to include or exclude them",
-            k_mocktail_rightclick = "Right-click to select/deselect all",
         },
     },
 }
