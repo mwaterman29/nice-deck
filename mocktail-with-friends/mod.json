@@ -1,0 +1,20 @@
+{
+	"id": "MocktailWithFriends",
+	"name": "Mocktail With Friends Deck",
+	"author": ["nice-deck"],
+	"description": "Like Mocktail Deck, but syncs deck selection in Multiplayer lobbies!",
+	"prefix": "mwf",
+	"main_file": "main.lua",
+	"priority": 21,
+	"badge_colour": "E67E22",
+	"badge_text_colour": "FFFFFF",
+	"display_name": "Mocktail With Friends",
+	"version": "0.1.0",
+	"dependencies": [
+		"Steamodded (>=1.0.0~BETA-1221a)",
+		"Multiplayer (>=0.3.0)"
+	],
+	"conflicts": [],
+	"provides": [],
+	"dump_loc": false
+}

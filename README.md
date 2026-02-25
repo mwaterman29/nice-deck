@@ -22,6 +22,13 @@ Click the deck to open a selection overlay and directly choose which decks to co
 
 **Requires**: [Steamodded](https://github.com/Steamopollys/Steamodded) (>=1.0.0) only — no Multiplayer dependency.
 
+### Mocktail With Friends Deck
+Multiplayer version of Mocktail Deck. The host selects which decks to combine,
+and the selection syncs to the guest via the lobby. Both players play with the same merged deck.
+Gracefully handles mod mismatches — if the host picks a deck the guest doesn't have, it's skipped.
+
+**Requires**: [Steamodded](https://github.com/Steamopollys/Steamodded) (>=1.0.0) + [Multiplayer](https://github.com/Balatro-Multiplayer/BalatroMultiplayer) (>=0.3.0)
+
 ## Installation
 
 Copy any deck folder (e.g. `mega-plus-plus/`) into your Balatro `Mods/` directory.
@@ -32,8 +39,9 @@ Copy any deck folder (e.g. `mega-plus-plus/`) into your Balatro `Mods/` director
 nice-deck/
 ├── mega-plus-plus/   # Mega++ Deck mod
 ├── action-replay/    # Action Replay Deck mod
-├── mocktail/         # Mocktail Deck mod
-├── vision/           # Design docs and learnings
+├── mocktail/                # Mocktail Deck mod
+├── mocktail-with-friends/   # Mocktail With Friends (MP) mod
+├── vision/                  # Design docs and learnings
 └── references/       # Cloned reference repos for study
 ```
 
