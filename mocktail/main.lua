@@ -206,6 +206,7 @@ end
 
 G.MOCKTAIL_STATE = G.MOCKTAIL_STATE or {}
 G.MOCKTAIL_STATE.count_text = "Start (0 selected)"
+G.MOCKTAIL_STATE.toggle_text = "Select All (A)"
 
 local function update_mocktail_count()
     local count = 0
@@ -221,6 +222,15 @@ local function update_mocktail_count()
         end
     end
     G.MOCKTAIL_STATE.count_text = "Start (" .. count .. " selected)"
+    local total = 0
+    if G.mocktail_select then
+        for i = 1, #G.mocktail_select do
+            if G.mocktail_select[i].cards then
+                total = total + #G.mocktail_select[i].cards
+            end
+        end
+    end
+    G.MOCKTAIL_STATE.toggle_text = (count > 0) and "Deselect All (A)" or "Select All (A)"
 end
 
 local function mocktail_select_all()
@@ -406,7 +416,7 @@ function Card:click()
                                 n = G.UIT.C,
                                 config = { align = "cm", padding = 0.1, r = 0.1, colour = G.C.BLUE, hover = true, button = "mocktail_select_all", minw = 2, minh = 0.6 },
                                 nodes = {
-                                    { n = G.UIT.T, config = { text = "Select All (A)", scale = 0.4, colour = G.C.WHITE, shadow = true } },
+                                    { n = G.UIT.T, config = { ref_table = G.MOCKTAIL_STATE, ref_value = "toggle_text", scale = 0.4, colour = G.C.WHITE, shadow = true } },
                                 },
                             },
                         },
@@ -578,9 +588,12 @@ local highlight_ref = Card.highlight
 function Card:highlight(is_highlighted)
     if self.mocktail_select then
         mocktail_cfg_edit(is_highlighted, self.mocktail_select)
+    end
+    local ret = highlight_ref(self, is_highlighted)
+    if self.mocktail_select then
         update_mocktail_count()
     end
-    return highlight_ref(self, is_highlighted)
+    return ret
 end
 
 ----------------------------------------------
