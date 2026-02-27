@@ -54,8 +54,6 @@ local value_blacklist = {
 	hands = true,
 	-- Index/selector fields (used as table keys, not scaling values)
 	form = true,
-	-- Counters that accumulate from 0 (would reset game logic)
-	rounds = true,
 }
 
 -- Should this value be randomized?
@@ -67,7 +65,8 @@ local function can_randomize(key, value)
 	return true
 end
 
--- Randomize all numeric values on a card
+-- Randomize all numeric values on a card.
+-- Stores multipliers on card.mis_factors so they survive evolution.
 local function misprintize(card)
 	if not card or not card.ability then return end
 
@@ -75,16 +74,30 @@ local function misprintize(card)
 	local max = G.GAME.modifiers.misprint_max or 1
 	if min == 1 and max == 1 then return end
 
+	-- Generate and store multiplier factors (or reuse existing ones)
+	if not card.mis_factors then
+		card.mis_factors = {}
+	end
+
 	-- Randomize ability values
 	for k, v in pairs(card.ability) do
 		if type(v) == "number" and can_randomize(k, v) then
-			local seed = pseudoseed("misprint" .. G.GAME.round_resets.ante)
-			card.ability[k] = safe_fmt(v * log_random(seed, min, max))
+			if not card.mis_factors[k] then
+				local seed = pseudoseed("misprint" .. G.GAME.round_resets.ante)
+				card.mis_factors[k] = log_random(seed, min, max)
+			end
+			card.ability[k] = safe_fmt(v * card.mis_factors[k])
 		elseif type(v) == "table" and k ~= "immutable" and k ~= "colour" then
+			if not card.mis_factors[k] then
+				card.mis_factors[k] = {}
+			end
 			for k2, v2 in pairs(v) do
 				if type(v2) == "number" and can_randomize(k2, v2) then
-					local seed = pseudoseed("misprint" .. G.GAME.round_resets.ante)
-					card.ability[k][k2] = safe_fmt(v2 * log_random(seed, min, max))
+					if not card.mis_factors[k][k2] then
+						local seed = pseudoseed("misprint" .. G.GAME.round_resets.ante)
+						card.mis_factors[k][k2] = log_random(seed, min, max)
+					end
+					card.ability[k][k2] = safe_fmt(v2 * card.mis_factors[k][k2])
 				end
 			end
 		end
@@ -92,10 +105,16 @@ local function misprintize(card)
 
 	-- Randomize base values (chip values on playing cards)
 	if card.base then
+		if not card.mis_factors._base then
+			card.mis_factors._base = {}
+		end
 		for k, v in pairs(card.base) do
 			if type(v) == "number" and not value_blacklist[k] and v ~= 0 then
-				local seed = pseudoseed("misprint" .. G.GAME.round_resets.ante)
-				card.base[k] = safe_fmt(v * log_random(seed, min, max))
+				if not card.mis_factors._base[k] then
+					local seed = pseudoseed("misprint" .. G.GAME.round_resets.ante)
+					card.mis_factors._base[k] = log_random(seed, min, max)
+				end
+				card.base[k] = safe_fmt(v * card.mis_factors._base[k])
 			end
 		end
 	end
@@ -118,7 +137,8 @@ end
 -- Hook Pokermon evolution to re-apply
 -- randomization after a Pokemon evolves.
 -- poke_backend_evolve calls set_ability which
--- resets values to stock; we re-randomize after.
+-- resets values to stock; we re-apply the same
+-- stored multipliers to the new stock values.
 ----------------------------------------------
 
 G.E_MANAGER:add_event(Event({
@@ -126,8 +146,12 @@ G.E_MANAGER:add_event(Event({
 		if poke_backend_evolve then
 			local orig_evolve = poke_backend_evolve
 			poke_backend_evolve = function(card, to_key, energize_amount)
+				-- Save factors before evolution resets them
+				local saved_factors = card.mis_factors
 				orig_evolve(card, to_key, energize_amount)
 				if G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
+					-- Restore saved factors so evolved form uses same multipliers
+					card.mis_factors = saved_factors
 					misprintize(card)
 				end
 			end
