@@ -1,0 +1,19 @@
+{
+	"id": "MisprintDeck",
+	"name": "Misprint Deck",
+	"author": ["nice-deck"],
+	"description": "All card values are randomized between X0.1 and X10. Ported from Cryptid, MP-safe (hands not randomized).",
+	"prefix": "mis",
+	"main_file": "main.lua",
+	"priority": 21,
+	"badge_colour": "9B59B6",
+	"badge_text_colour": "FFFFFF",
+	"display_name": "Misprint Deck",
+	"version": "0.1.0",
+	"dependencies": [
+		"Steamodded (>=1.0.0~BETA-1221a)"
+	],
+	"conflicts": [],
+	"provides": [],
+	"dump_loc": false
+}

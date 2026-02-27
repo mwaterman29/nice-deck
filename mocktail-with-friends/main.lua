@@ -147,20 +147,31 @@ end
 -- Read effective MP config (lobby when in lobby, local otherwise)
 local function mwf_mp_cfg_get()
     if is_mp_context() and MP.LOBBY.deck and MP.LOBBY.deck.mocktail_wf then
+        sendDebugMessage("[MWF] cfg_get: reading from LOBBY.deck = " .. tostring(MP.LOBBY.deck.mocktail_wf), "MocktailWithFriends")
         return MP.LOBBY.deck.mocktail_wf
     elseif is_mp_context() and MP.LOBBY.config and MP.LOBBY.config.mocktail_wf then
+        sendDebugMessage("[MWF] cfg_get: reading from LOBBY.config = " .. tostring(MP.LOBBY.config.mocktail_wf), "MocktailWithFriends")
         return MP.LOBBY.config.mocktail_wf
     else
-        return selection_to_keys()
+        local keys = selection_to_keys()
+        sendDebugMessage("[MWF] cfg_get: fallback to local keys = " .. keys, "MocktailWithFriends")
+        return keys
     end
 end
 
 -- Sync local selection to MP lobby (host only)
 local function mwf_sync()
-    if not is_mp_context() then return end
-    if not MP.LOBBY.is_host then return end
+    if not is_mp_context() then
+        sendDebugMessage("[MWF] mwf_sync: not in MP context, skipping", "MocktailWithFriends")
+        return
+    end
+    if not MP.LOBBY.is_host then
+        sendDebugMessage("[MWF] mwf_sync: not host, skipping", "MocktailWithFriends")
+        return
+    end
     local keys = selection_to_keys()
     MP.LOBBY.config.mocktail_wf = keys
+    sendDebugMessage("[MWF] mwf_sync: syncing keys = " .. keys, "MocktailWithFriends")
     MP.ACTIONS.lobby_options()
 end
 
@@ -197,8 +208,10 @@ SMODS.Back({
     pos = { x = 0, y = 0 },
 
     apply = function(self)
+        sendDebugMessage("[MWF] apply() called. is_mp_context=" .. tostring(is_mp_context()), "MocktailWithFriends")
         G.GAME.modifiers.mocktail = {}
         local selected = get_selected_decks()
+        sendDebugMessage("[MWF] apply() selected " .. #selected .. " decks: " .. table.concat(selected, ", "), "MocktailWithFriends")
         local back = G.GAME.selected_back
 
         for i = 1, #selected do
@@ -267,15 +280,37 @@ end
 
 ----------------------------------------------
 -- Hook copy_host_deck to include our config
+-- Deferred: Multiplayer loads after us (higher priority),
+-- so we hook lazily via event to ensure it exists first.
 ----------------------------------------------
 
-local copy_host_deck_ref = G.FUNCS.copy_host_deck
-G.FUNCS.copy_host_deck = function()
-    copy_host_deck_ref()
-    if MP.LOBBY.config.mocktail_wf then
-        MP.LOBBY.deck.mocktail_wf = MP.LOBBY.config.mocktail_wf
+local mwf_hook_installed = false
+local function install_copy_host_deck_hook()
+    if mwf_hook_installed then return end
+    if not G.FUNCS.copy_host_deck then
+        sendDebugMessage("[MWF] copy_host_deck not found yet, skipping hook", "MocktailWithFriends")
+        return
     end
+    local original = G.FUNCS.copy_host_deck
+    G.FUNCS.copy_host_deck = function()
+        original()
+        if MP and MP.LOBBY and MP.LOBBY.config and MP.LOBBY.config.mocktail_wf then
+            MP.LOBBY.deck = MP.LOBBY.deck or {}
+            MP.LOBBY.deck.mocktail_wf = MP.LOBBY.config.mocktail_wf
+            sendDebugMessage("[MWF] copy_host_deck hook: copied mocktail_wf = " .. tostring(MP.LOBBY.config.mocktail_wf), "MocktailWithFriends")
+        end
+    end
+    mwf_hook_installed = true
+    sendDebugMessage("[MWF] copy_host_deck hook installed successfully", "MocktailWithFriends")
 end
+
+-- Try to install the hook after all mods are loaded
+G.E_MANAGER:add_event(Event({
+    func = function()
+        install_copy_host_deck_hook()
+        return true
+    end,
+}))
 
 ----------------------------------------------
 -- UI: Selection count tracking

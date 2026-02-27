@@ -18,6 +18,10 @@ Kinda jank but mostly works
 ### Mocktail With Friends Deck - untested for now
 Multiplayer version of Mocktail Deck. The host selects which decks to combine.
 
+### Misprint Deck
+Standalone port of Cryptid's Misprint Deck. All card values randomized between **X0.1** and **X10**.
+`hands` field blacklisted so it works safely in Multiplayer.
+
 ## Installation
 
 Copy any deck folder (e.g. `mega-plus-plus/`) into your Balatro `Mods/` directory.
@@ -30,6 +34,7 @@ nice-deck/
 ├── action-replay/    # Action Replay Deck mod
 ├── mocktail/                # Mocktail Deck mod
 ├── mocktail-with-friends/   # Mocktail With Friends (MP) mod
+├── misprint/                # Misprint Deck (Cryptid port)
 ├── vision/                  # Design docs and learnings
 └── references/       # Cloned reference repos for study
 ```
@@ -39,5 +44,6 @@ nice-deck/
 - [Pokermon](https://github.com/InertSteak/Pokermon) — the base Pokemon x Balatro mod
 - [PokermonPlus](https://github.com/SonfiveTV/PokermonPlus) — Rogue Deck pattern and negative edition technique
 - [BalatroMultiplayer](https://github.com/Balatro-Multiplayer/BalatroMultiplayer) — Cocktail Deck effect composition
+- [Cryptid](https://github.com/SpectralPack/Cryptid) — Misprint Deck randomization mechanic
 
 All code generated with claude code. 

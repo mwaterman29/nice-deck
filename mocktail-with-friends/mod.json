@@ -12,7 +12,7 @@
 	"version": "0.1.0",
 	"dependencies": [
 		"Steamodded (>=1.0.0~BETA-1221a)",
-		"Multiplayer (>=0.3.0)"
+		"Multiplayer (>=0.2.20)"
 	],
 	"conflicts": [],
 	"provides": [],
