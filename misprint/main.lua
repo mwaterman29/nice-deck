@@ -134,31 +134,32 @@ function create_card(_type, area, ...)
 end
 
 ----------------------------------------------
--- Hook Pokermon evolution to re-apply
--- randomization after a Pokemon evolves.
--- poke_backend_evolve calls set_ability which
--- resets values to stock; we re-apply the same
--- stored multipliers to the new stock values.
+-- Hook Card.set_ability to re-randomize after
+-- ANY ability reset (evolution, form change, etc.)
+-- Uses a deferred event so re-randomization runs
+-- AFTER all post-set_ability processing (e.g.
+-- poke_backend_evolve's value restoration).
 ----------------------------------------------
 
-G.E_MANAGER:add_event(Event({
-	func = function()
-		if poke_backend_evolve then
-			local orig_evolve = poke_backend_evolve
-			poke_backend_evolve = function(card, to_key, energize_amount)
-				-- Save factors before evolution resets them
-				local saved_factors = card.mis_factors
-				orig_evolve(card, to_key, energize_amount)
-				if G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
-					-- Restore saved factors so evolved form uses same multipliers
-					card.mis_factors = saved_factors
-					misprintize(card)
-				end
-			end
-		end
-		return true
-	end,
-}))
+local set_ability_ref = Card.set_ability
+function Card:set_ability(center, initial, delay_sprites)
+	local saved_factors = self.mis_factors
+	set_ability_ref(self, center, initial, delay_sprites)
+	-- Only re-randomize cards that were previously randomized
+	if saved_factors and G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
+		-- Defer to next event tick so we run AFTER any
+		-- post-set_ability value restoration (poke_backend_evolve etc.)
+		local card_ref = self
+		G.E_MANAGER:add_event(Event({
+			blocking = false,
+			func = function()
+				card_ref.mis_factors = saved_factors
+				misprintize(card_ref)
+				return true
+			end,
+		}))
+	end
+end
 
 ----------------------------------------------
 -- Deck registration
