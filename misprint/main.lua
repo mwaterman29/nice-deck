@@ -52,6 +52,10 @@ local value_blacklist = {
 	card_limit = true,
 	-- MP safety: fractional hands breaks Multiplayer
 	hands = true,
+	-- Index/selector fields (used as table keys, not scaling values)
+	form = true,
+	-- Counters that accumulate from 0 (would reset game logic)
+	rounds = true,
 }
 
 -- Should this value be randomized?
@@ -109,6 +113,28 @@ function create_card(_type, area, ...)
 	end
 	return card
 end
+
+----------------------------------------------
+-- Hook Pokermon evolution to re-apply
+-- randomization after a Pokemon evolves.
+-- poke_backend_evolve calls set_ability which
+-- resets values to stock; we re-randomize after.
+----------------------------------------------
+
+G.E_MANAGER:add_event(Event({
+	func = function()
+		if poke_backend_evolve then
+			local orig_evolve = poke_backend_evolve
+			poke_backend_evolve = function(card, to_key, energize_amount)
+				orig_evolve(card, to_key, energize_amount)
+				if G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
+					misprintize(card)
+				end
+			end
+		end
+		return true
+	end,
+}))
 
 ----------------------------------------------
 -- Deck registration
