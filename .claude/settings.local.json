@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(find \"/c/Users/Matt/AppData/Roaming/Balatro/Mods/Steamodded\" -name \"*.lua\" -exec grep -l \"Paint Brush\\\\|loc_vars\" {} ;)"
     ]
   }
 }

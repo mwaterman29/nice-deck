@@ -161,6 +161,80 @@ function Card:set_ability(center, initial, delay_sprites)
 end
 
 ----------------------------------------------
+-- Fix hardcoded voucher effects.
+-- Most vouchers already use center_table.extra
+-- (which we randomize via create_card hook).
+-- A few hardcode their values — we correct them.
+----------------------------------------------
+
+local apply_to_run_ref = Card.apply_to_run
+function Card:apply_to_run(center)
+	-- Capture the randomized extra before original runs
+	local extra = (center and center.config and center.config.extra)
+		or (self and self.ability and self.ability.extra)
+	local name = (center and center.name)
+		or (self and self.ability and self.ability.name)
+
+	apply_to_run_ref(self, center)
+
+	if not (G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min) then return end
+	if type(extra) ~= "number" then return end
+
+	local rounded = math.floor(extra)
+	local diff = rounded - 1
+	if diff == 0 then return end
+
+	-- Paint Brush / Palette: vanilla hardcodes change_size(1)
+	if name == "Paint Brush" or name == "Palette" then
+		G.hand:change_size(diff)
+	end
+	-- Overstock / Overstock Plus: vanilla hardcodes change_shop_size(1)
+	if name == "Overstock" or name == "Overstock Plus" then
+		change_shop_size(diff)
+	end
+	-- Antimatter: vanilla hardcodes joker card_limit + 1
+	if name == "Antimatter" then
+		G.E_MANAGER:add_event(Event({func = function()
+			if G.jokers then
+				G.jokers.config.card_limit = G.jokers.config.card_limit + diff
+			end
+			return true end}))
+	end
+	-- Crystal Ball: vanilla hardcodes consumable card_limit + 1
+	if name == "Crystal Ball" then
+		G.E_MANAGER:add_event(Event({func = function()
+			G.consumeables.config.card_limit = G.consumeables.config.card_limit + diff
+			return true end}))
+	end
+end
+
+----------------------------------------------
+-- Hook tooltip generation for vouchers with
+-- hardcoded descriptions (no #1# in vanilla).
+-- Sets center.vars so generate_card_ui uses
+-- the card's randomized ability.extra value.
+----------------------------------------------
+
+local gen_uibox_ref = Card.generate_UIBox_ability_table
+function Card:generate_UIBox_ability_table(vars_only)
+	if self.ability and self.ability.set == "Voucher"
+		and G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
+		local name = self.ability.name
+		if name == "Overstock" or name == "Overstock Plus"
+			or name == "Crystal Ball"
+			or name == "Antimatter" then
+			self.config.center.vars = { self.ability.extra }
+		end
+	end
+	local result = gen_uibox_ref(self, vars_only)
+	-- Clean up to avoid stale vars persisting on center
+	if self.ability and self.ability.set == "Voucher" then
+		self.config.center.vars = nil
+	end
+	return result
+end
+
+----------------------------------------------
 -- Deck registration
 ----------------------------------------------
 
@@ -173,6 +247,48 @@ SMODS.Back({
 	apply = function(self)
 		G.GAME.modifiers.misprint_min = (G.GAME.modifiers.misprint_min or 1) * self.config.misprint_min
 		G.GAME.modifiers.misprint_max = (G.GAME.modifiers.misprint_max or 1) * self.config.misprint_max
+
+		-- Fix voucher configs so extra = the hardcoded effect value (1).
+		-- Without this, Overstock has no extra, and Crystal Ball/Antimatter
+		-- have extra values unrelated to their +1 slot effects.
+		local voucher_fixes = {
+			"v_overstock_norm", "v_overstock_plus",
+			"v_crystal_ball", "v_antimatter",
+		}
+		for _, key in ipairs(voucher_fixes) do
+			if G.P_CENTERS[key] then
+				G.P_CENTERS[key].config.extra = 1
+			end
+		end
+
+		-- Override localization text for vouchers with hardcoded "+1"
+		-- so they show the randomized value via #1# placeholder
+		local vloc = G.localization.descriptions.Voucher
+		if vloc then
+			if vloc.v_overstock_norm then
+				vloc.v_overstock_norm.text = { "{C:attention}+#1#{} card slot", "available in shop" }
+			end
+			if vloc.v_overstock_plus then
+				vloc.v_overstock_plus.text = { "{C:attention}+#1#{} card slot", "available in shop" }
+			end
+			if vloc.v_antimatter then
+				vloc.v_antimatter.text = { "{C:dark_edition}+#1#{} Joker Slot" }
+			end
+			if vloc.v_crystal_ball then
+				vloc.v_crystal_ball.text = { "{C:attention}+#1#{} consumable slot" }
+			end
+		end
+
+		-- DEBUG: start with money and voucher tags for testing
+		G.E_MANAGER:add_event(Event({
+			func = function()
+				ease_dollars(4000)
+				for i = 1, 40 do
+					add_tag(Tag("tag_voucher"))
+				end
+				return true
+			end
+		}))
 
 		-- Randomize poker hand base values
 		-- (Cryptid does this via Lovely patch on game.lua)
