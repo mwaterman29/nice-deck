@@ -44,7 +44,6 @@ local value_blacklist = {
 	qty = true,
 	h_x_chips = true,
 	d_size = true,
-	h_size = true,
 	colour = true,
 	suit_nominal_original = true,
 	times_played = true,
