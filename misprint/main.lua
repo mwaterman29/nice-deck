@@ -140,10 +140,22 @@ end
 -- right before create_shop_card_ui in utils.lua/tag.lua.
 ----------------------------------------------
 
+-- Vouchers that modify hands/discards per round — skip randomization
+-- to avoid fractional values that break Multiplayer.
+local voucher_blacklist = {
+	["Hieroglyph"] = true,
+	["Petroglyph"] = true,
+	["Grabber"] = true,
+	["Nacho Tong"] = true,
+	["Wasteful"] = true,
+	["Recyclomancy"] = true,
+}
+
 local create_shop_card_ui_ref = create_shop_card_ui
 function create_shop_card_ui(card, card_type, area)
 	if card_type == 'Voucher' and G.GAME and G.GAME.modifiers
-		and G.GAME.modifiers.misprint_min then
+		and G.GAME.modifiers.misprint_min
+		and not voucher_blacklist[card.ability.name] then
 		misprintize(card)
 	end
 	return create_shop_card_ui_ref(card, card_type, area)
@@ -239,7 +251,9 @@ function Card:generate_UIBox_ability_table(vars_only)
 		local name = self.ability.name
 		if name == "Overstock" or name == "Overstock Plus"
 			or name == "Crystal Ball"
-			or name == "Antimatter" then
+			or name == "Antimatter"
+			or name == "Energy Search"
+			or name == "Energy Research" then
 			self.config.center.vars = { self.ability.extra }
 		end
 	end
@@ -305,6 +319,45 @@ SMODS.Back({
 			if vloc.v_crystal_ball then
 				vloc.v_crystal_ball.text = { "{C:attention}+#1#{} consumable slot" }
 				reparse_loc(vloc.v_crystal_ball)
+			end
+		end
+
+		-- Pokermon Energy Search / Energy Research: hardcoded +2/+3 energy limit.
+		-- These use SMODS redeem (bypasses vanilla apply_to_run), so we must
+		-- patch config.extra, override redeem/unredeem, fix loc_vars & text.
+		local energy_vouchers = {
+			{ key = "v_poke_energysearch", base = 2 },
+			{ key = "v_poke_energyresearch", base = 3 },
+		}
+		for _, ev in ipairs(energy_vouchers) do
+			local center = G.P_CENTERS[ev.key]
+			if center then
+				center.config.extra = ev.base
+				-- Override redeem to use randomized value
+				center.redeem = function(self, card)
+					local amount = card and card.ability and math.floor(card.ability.extra) or ev.base
+					G.GAME.energy_plus = (G.GAME.energy_plus or 0) + amount
+				end
+				center.unredeem = function(self, card)
+					local amount = card and card.ability and math.floor(card.ability.extra) or ev.base
+					G.GAME.energy_plus = (G.GAME.energy_plus or 0) - amount
+				end
+				-- Override loc_vars so tooltip shows randomized value
+				center.loc_vars = function(self, info_queue, card)
+					local val = card and card.ability and card.ability.extra or self.config.extra
+					return { vars = { val } }
+				end
+			end
+		end
+		-- Reparse Energy Search/Research localization text with #1# placeholder
+		if vloc then
+			if vloc.v_poke_energysearch then
+				vloc.v_poke_energysearch.text = { "{C:pink}+#1#{} Energy Limit" }
+				reparse_loc(vloc.v_poke_energysearch)
+			end
+			if vloc.v_poke_energyresearch then
+				vloc.v_poke_energyresearch.text = { "{C:pink}+#1#{} Energy Limit" }
+				reparse_loc(vloc.v_poke_energyresearch)
 			end
 		end
 
