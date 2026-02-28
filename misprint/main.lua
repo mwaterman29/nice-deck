@@ -133,6 +133,23 @@ function create_card(_type, area, ...)
 end
 
 ----------------------------------------------
+-- Hook create_shop_card_ui to randomize vouchers.
+-- Voucher cards are created via Card() constructor,
+-- NOT create_card(), so our create_card hook misses them.
+-- This matches Cryptid's approach of calling manipulate()
+-- right before create_shop_card_ui in utils.lua/tag.lua.
+----------------------------------------------
+
+local create_shop_card_ui_ref = create_shop_card_ui
+function create_shop_card_ui(card, card_type, area)
+	if card_type == 'Voucher' and G.GAME and G.GAME.modifiers
+		and G.GAME.modifiers.misprint_min then
+		misprintize(card)
+	end
+	return create_shop_card_ui_ref(card, card_type, area)
+end
+
+----------------------------------------------
 -- Hook Card.set_ability to re-randomize after
 -- ANY ability reset (evolution, form change, etc.)
 -- Uses a deferred event so re-randomization runs
@@ -262,20 +279,32 @@ SMODS.Back({
 		end
 
 		-- Override localization text for vouchers with hardcoded "+1"
-		-- so they show the randomized value via #1# placeholder
+		-- so they show the randomized value via #1# placeholder.
+		-- Must also re-parse text_parsed (game uses parsed form, not raw text).
+		local function reparse_loc(entry)
+			entry.text_parsed = {}
+			for _, line in ipairs(entry.text) do
+				entry.text_parsed[#entry.text_parsed + 1] = loc_parse_string(line)
+			end
+		end
+
 		local vloc = G.localization.descriptions.Voucher
 		if vloc then
 			if vloc.v_overstock_norm then
 				vloc.v_overstock_norm.text = { "{C:attention}+#1#{} card slot", "available in shop" }
+				reparse_loc(vloc.v_overstock_norm)
 			end
 			if vloc.v_overstock_plus then
 				vloc.v_overstock_plus.text = { "{C:attention}+#1#{} card slot", "available in shop" }
+				reparse_loc(vloc.v_overstock_plus)
 			end
 			if vloc.v_antimatter then
 				vloc.v_antimatter.text = { "{C:dark_edition}+#1#{} Joker Slot" }
+				reparse_loc(vloc.v_antimatter)
 			end
 			if vloc.v_crystal_ball then
 				vloc.v_crystal_ball.text = { "{C:attention}+#1#{} consumable slot" }
+				reparse_loc(vloc.v_crystal_ball)
 			end
 		end
 
