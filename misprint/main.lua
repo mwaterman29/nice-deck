@@ -53,6 +53,9 @@ local value_blacklist = {
 	hands = true,
 	-- Index/selector fields (used as table keys, not scaling values)
 	form = true,
+	-- Growth counters (seed → flower transformation threshold)
+	level = true,
+	level_max = true,
 }
 
 -- Should this value be randomized?
