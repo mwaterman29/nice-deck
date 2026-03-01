@@ -361,13 +361,46 @@ SMODS.Back({
 			end
 		end
 
-		-- DEBUG: start with money and voucher tags for testing
+		-- Pokermon Flower Card: Xmult_flower is already on card.ability
+		-- (misprintize handles it), but suit_count is hardcoded as a local
+		-- in calculate. Add it to config so it can be randomized too.
+		local flower = G.P_CENTERS.m_poke_flower
+		if flower then
+			flower.config.suit_count = 4
+			-- Override calculate to use randomized suit_count
+			flower.calculate = function(self, card, context)
+				if context.main_scoring and context.cardarea == G.play then
+					local suit_req = math.floor(card.ability.suit_count or 4)
+					if next(SMODS.find_card('j_poke_roserade')) then
+						suit_req = suit_req - 1
+					end
+					if poke_suit_check(context.scoring_hand, suit_req) then
+						return { x_mult = card.ability.Xmult_flower }
+					end
+				end
+			end
+			-- Override loc_vars to show both randomized values
+			flower.loc_vars = function(self, info_queue, center)
+				return { vars = {
+					center.ability.Xmult_flower,
+					math.floor(center.ability.suit_count or 4),
+				}}
+			end
+		end
+		-- Reparse flower localization text with #2# for suit count
+		local eloc = G.localization.descriptions.Enhanced
+		if eloc and eloc.m_poke_flower then
+			eloc.m_poke_flower.text = {
+				"{X:mult,C:white} X#1# {} Mult if poker",
+				"hand contains {C:attention}#2#+ suits",
+			}
+			reparse_loc(eloc.m_poke_flower)
+		end
+
+		-- DEBUG: start with money for testing
 		G.E_MANAGER:add_event(Event({
 			func = function()
 				ease_dollars(4000)
-				for i = 1, 40 do
-					add_tag(Tag("tag_voucher"))
-				end
 				return true
 			end
 		}))
