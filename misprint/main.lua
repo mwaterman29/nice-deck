@@ -373,7 +373,7 @@ SMODS.Back({
 			-- Override calculate to use randomized suit_count
 			flower.calculate = function(self, card, context)
 				if context.main_scoring and context.cardarea == G.play then
-					local suit_req = math.floor(card.ability.suit_count or 4)
+					local suit_req = math.min(4, math.floor(card.ability.suit_count or 4))
 					if next(SMODS.find_card('j_poke_roserade')) then
 						suit_req = suit_req - 1
 					end
@@ -386,7 +386,7 @@ SMODS.Back({
 			flower.loc_vars = function(self, info_queue, center)
 				return { vars = {
 					center.ability.Xmult_flower,
-					math.floor(center.ability.suit_count or 4),
+					math.min(4, math.floor(center.ability.suit_count or 4)),
 				}}
 			end
 		end
@@ -399,14 +399,6 @@ SMODS.Back({
 			}
 			reparse_loc(eloc.m_poke_flower)
 		end
-
-		-- DEBUG: start with money for testing
-		G.E_MANAGER:add_event(Event({
-			func = function()
-				ease_dollars(4000)
-				return true
-			end
-		}))
 
 		-- Randomize poker hand base values
 		-- (Cryptid does this via Lovely patch on game.lua)
