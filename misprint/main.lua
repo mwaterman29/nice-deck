@@ -69,7 +69,9 @@ end
 
 -- Randomize all numeric values on a card.
 -- Stores multipliers on card.mis_factors so they survive evolution.
-local function misprintize(card)
+-- ability_only: if true, skip base value randomization (used by set_ability hook
+-- to avoid double-randomizing base chip values that weren't reset).
+local function misprintize(card, ability_only)
 	if not card or not card.ability then return end
 
 	local min = G.GAME.modifiers.misprint_min or 1
@@ -119,7 +121,7 @@ local function misprintize(card)
 	end
 
 	-- Randomize base values (chip values on playing cards)
-	if card.base then
+	if card.base and not ability_only then
 		if not card.mis_factors._base then
 			card.mis_factors._base = {}
 		end
@@ -142,6 +144,21 @@ end
 local create_card_ref = create_card
 function create_card(_type, area, ...)
 	local card = create_card_ref(_type, area, ...)
+	if G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
+		misprintize(card)
+	end
+	return card
+end
+
+----------------------------------------------
+-- Hook create_playing_card to randomize playing cards.
+-- Playing cards are created via Card() constructor (not
+-- create_card), so the create_card hook misses them.
+----------------------------------------------
+
+local create_playing_card_ref = create_playing_card
+function create_playing_card(card_init, area, skip_materialize, silent, colours, skip_emplace)
+	local card = create_playing_card_ref(card_init, area, skip_materialize, silent, colours, skip_emplace)
 	if G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
 		misprintize(card)
 	end
@@ -179,29 +196,22 @@ end
 
 ----------------------------------------------
 -- Hook Card.set_ability to re-randomize after
--- ANY ability reset (evolution, form change, etc.)
--- Uses a deferred event so re-randomization runs
--- AFTER all post-set_ability processing (e.g.
--- poke_backend_evolve's value restoration).
+-- ANY non-initial ability reset (tarots applying
+-- enhancements, evolution, form change, etc.)
+-- Runs synchronously with fresh ability factors.
+-- Uses ability_only to preserve base chip values.
 ----------------------------------------------
 
 local set_ability_ref = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
-	local saved_factors = self.mis_factors
 	set_ability_ref(self, center, initial, delay_sprites)
-	-- Only re-randomize cards that were previously randomized
-	if saved_factors and G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
-		-- Defer to next event tick so we run AFTER any
-		-- post-set_ability value restoration (poke_backend_evolve etc.)
-		local card_ref = self
-		G.E_MANAGER:add_event(Event({
-			blocking = false,
-			func = function()
-				card_ref.mis_factors = saved_factors
-				misprintize(card_ref)
-				return true
-			end,
-		}))
+	-- Re-randomize ability values after non-initial ability changes.
+	-- initial=true is card construction (handled by create_card/create_playing_card hooks).
+	if not initial and G.GAME and G.GAME.modifiers and G.GAME.modifiers.misprint_min then
+		-- Preserve base chip factors, clear ability factors for fresh randomization
+		local saved_base = self.mis_factors and self.mis_factors._base
+		self.mis_factors = { _base = saved_base }
+		misprintize(self, true) -- ability_only: don't re-randomize base chip values
 	end
 end
 
