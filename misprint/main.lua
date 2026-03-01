@@ -105,6 +105,19 @@ local function misprintize(card)
 		end
 	end
 
+	-- Clamp card selection counts to [1, 5]
+	if card.ability.max_highlighted then
+		card.ability.max_highlighted = math.max(1, math.min(5, math.floor(card.ability.max_highlighted)))
+	end
+	if card.ability.consumeable then
+		if card.ability.consumeable.mod_num then
+			card.ability.consumeable.mod_num = math.max(1, math.min(5, math.floor(card.ability.consumeable.mod_num)))
+		end
+		if card.ability.consumeable.max_highlighted then
+			card.ability.consumeable.max_highlighted = math.max(1, math.min(5, math.floor(card.ability.consumeable.max_highlighted)))
+		end
+	end
+
 	-- Randomize base values (chip values on playing cards)
 	if card.base then
 		if not card.mis_factors._base then
@@ -399,6 +412,19 @@ SMODS.Back({
 			}
 			reparse_loc(eloc.m_poke_flower)
 		end
+
+		-- DEBUG: money and packs for testing
+		G.E_MANAGER:add_event(Event({
+			func = function()
+				ease_dollars(500)
+				for i = 1, 10 do
+					add_tag(Tag("tag_ethereal"))
+					add_tag(Tag("tag_charm"))
+					add_tag(Tag("tag_poke_pocket_tag"))
+				end
+				return true
+			end
+		}))
 
 		-- Randomize poker hand base values
 		-- (Cryptid does this via Lovely patch on game.lua)
